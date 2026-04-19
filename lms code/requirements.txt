@@ -1,0 +1,25 @@
+# ── Core dependencies ──────────────────────────────────────────────────────────
+# Install with:  pip install -r requirements.txt
+#
+# pyzbar ALSO needs the native zbar library:
+#   Windows  → bundled automatically with the pyzbar wheel (no extra step)
+#   macOS    → brew install zbar
+#   Linux    → sudo apt install libzbar0   (Debian/Ubuntu)
+#              sudo dnf install zbar       (Fedora)
+# ───────────────────────────────────────────────────────────────────────────────
+
+# QR / barcode scanning
+opencv-python>=4.8.0
+pyzbar>=0.1.9
+
+# Supabase + HTTP
+supabase>=2.0.0
+httpx>=0.24.0
+
+# Data / display
+pandas>=2.0.0
+tabulate>=0.9.0
+
+# Utilities
+python-dotenv>=1.0.0
+typing_extensions>=4.5.0
