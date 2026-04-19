@@ -1,18 +1,63 @@
 import os
+import sys
 import cv2
 import time
 import threading
-import winsound
 from pyzbar.pyzbar import decode, ZBarSymbol
 from database import Matching_QR
 
 os.environ["ZBAR_LOG_LEVEL"] = "ERROR"
 
 
+def _beep():
+    """Cross-platform beep sound."""
+    try:
+        if sys.platform == "win32":
+            import winsound
+            winsound.Beep(1000, 400)
+        elif sys.platform == "darwin":
+            os.system("afplay /System/Library/Sounds/Ping.aiff 2>/dev/null || true")
+        else:
+            # Linux: try multiple fallbacks
+            os.system(
+                "paplay /usr/share/sounds/freedesktop/stereo/bell.oga 2>/dev/null || "
+                "aplay /usr/share/sounds/alsa/Front_Center.wav 2>/dev/null || "
+                "beep 2>/dev/null || "
+                "echo -e '\\a' || true"
+            )
+    except Exception:
+        pass  # Sound is non-critical, never crash over it
+
+
+def _open_camera():
+    """Try to open the first available camera, with platform-safe backends."""
+    backends = []
+    if sys.platform == "win32":
+        backends = [cv2.CAP_DSHOW, cv2.CAP_MSMF, cv2.CAP_ANY]
+    elif sys.platform == "darwin":
+        backends = [cv2.CAP_AVFOUNDATION, cv2.CAP_ANY]
+    else:
+        backends = [cv2.CAP_V4L2, cv2.CAP_ANY]
+
+    for index in range(3):          # try camera indices 0, 1, 2
+        for backend in backends:
+            try:
+                cap = cv2.VideoCapture(index, backend)
+                if cap.isOpened():
+                    return cap
+                cap.release()
+            except Exception:
+                continue
+
+    # Last-resort fallback with no backend hint
+    cap = cv2.VideoCapture(0)
+    return cap
+
+
 class Scan:
     def __init__(self):
         self.info = Matching_QR()
-        self.cam = cv2.VideoCapture(0)
+        self.cam = _open_camera()
 
         self.last_scan_time = 0
         self.SCAN_DELAY = 1  # seconds
@@ -84,8 +129,7 @@ class Scan:
             if self.detected_time:
                 
                 if time.time() - self.detected_time >= 3:
-                    # 🔊 play sound ON EXIT
-                    winsound.Beep(1000, 400)
+                    _beep()
                     break
 
             # display result on screen
